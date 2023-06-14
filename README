@@ -1,0 +1,15 @@
+Nanoplasm
+
+n
+
+![Nanoplasm worflow](misc/NanoPlasm.png)
+
+TO DO:
+- add steps to check files and files extension
+- add step to check pairs of long and short reads files if hybrid mode
+
+
+To installed in environment:
+- snakemake
+- BWA
+- sdf

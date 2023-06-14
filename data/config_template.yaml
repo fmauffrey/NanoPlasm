@@ -1,0 +1,27 @@
+nanofilt:
+  quality: 9
+  length: 200
+flye:
+  others: ""
+medaka:
+  model: r1041_e82_400bps_sup_v4.2.0
+homopolish:
+  model: "R10.3.pkl"
+  db: "data/bacteria.msh"
+fastp:
+  qualified_quality_phred: 15
+  unqualified_percent_limit: 40
+  average_qual: 0
+  length_limit: 0
+unicycler:
+  mode: "normal"
+get_plasmid:
+  circularization: YN
+  min_size: 1000
+  max_size: 300000
+mobtyper:
+  options:
+    ""
+amrfinder:
+  min_cov: 0.5
+  trans_table: 11

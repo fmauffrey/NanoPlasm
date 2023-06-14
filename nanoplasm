@@ -1,0 +1,111 @@
+#! /usr/bin/env python3
+
+import argparse
+import os
+import sys
+import yaml
+import shutil
+from subprocess import run
+
+""" Wrapper for the snakemake pipeline """
+
+
+def check_files(folder):
+    # Verify if fastq files are present in the specified folder
+    try:
+        files_list = os.listdir(folder)
+        if not files_list:
+            print("Specified folder is empty")
+            sys.exit(2)
+    except FileNotFoundError:
+        print("Specified folder does not exist")
+        sys.exit(2)
+    
+    return True
+
+
+def create_config(nano_dir, ill_dir, run_dir):
+    # Create a config file for the run
+
+    # Load the configuration file template
+    config_template = yaml.safe_load(open(f"{os.path.dirname(sys.argv[0])}/data/config_template.yaml", "r"))
+
+    # Define reads folders path and samples names and add the info to the config file
+    samples = [fastq.replace(".fastq", "") for fastq in os.listdir(nano_dir)]
+    samples_nano_path = os.path.abspath(nano_dir)
+    samples_ill_path = os.path.abspath(ill_dir) if ill_dir else ""
+    config_file = {"path_nano": samples_nano_path, "path_ill": samples_ill_path, "samples": samples, **config_template}
+
+    # Save new configuration file
+    try:
+        os.mkdir(run_dir)
+    except FileExistsError:
+        if input(f"Directory {run_dir} already exists. Overwrite ? [y/N] -> ") == "y":
+            shutil.rmtree(run_dir)
+            os.mkdir(run_dir)
+        else:
+            sys.exit(0)
+
+    with open(f"{run_dir}/config.yaml", "w") as output:
+        yaml.safe_dump(config_file, output, sort_keys=False)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Plasmid typing with Nanopore or hybrid Nanopore/Illumina.")
+
+    # Add subparser to allow the different commands
+    subparser = parser.add_subparsers(dest='command')
+    init_parser = subparser.add_parser('init', description = "Create a run folder with a config file.")
+    typing_parser = subparser.add_parser('typing', description = "Start Nanoplasm with long|hybrid mode.")
+
+    # Arguments for config command
+    init_parser.add_argument("-i", "--input", type=str, help="directory with Nanopore fastq files. Files must be in the following format: ID.fastq"
+                             , dest="folder_nano", required=True, metavar="dir")
+    init_parser.add_argument("-I", "--INPUT", type=str, help="directory with Illumina fastq files. Files must be in the following format: ID_R#.fastq"
+                             , dest="folder_ill", metavar="dir", default=None)
+    init_parser.add_argument("-o", "--output", type=str, help="directory to create for the run", dest="run_dir",
+                               required=True, metavar="dir")
+
+    # Arguments for typing command
+    typing_parser.add_argument("-m", "--mode", type=str, help="mode for assembling genomes [long]",
+                                dest="mode", metavar="dir", default="long", choices=["long", "hybrid"])
+    typing_parser.add_argument("-d", "--dir", type=str, help="directory for the run (created with nanoplasm init)",
+                               dest="run_dir", required=True, metavar="dir")
+    typing_parser.add_argument("-t", "--thread", type=int, help="number of threads [1]", dest="thread",
+                               default=1, metavar="int")
+    typing_parser.add_argument("--quality_check", action="store_true", help="enable reads quality check [disabled]", dest="quality")
+    typing_parser.add_argument("--options", type=str, help="Snakemake options. Use as --options= and snakemake arguments between brackets", metavar="str", dest="options")
+
+
+    args = parser.parse_args()
+
+    if args.command not in ["init", "typing"]:
+        sys.exit("Commands available: init, typing")
+
+    if args.command == "init":
+        if check_files(args.folder_nano) and check_files(args.folder_nano):
+            create_config(args.folder_nano, args.folder_ill, args.run_dir)
+
+    elif args.command == "typing":
+        cur_path = os.path.dirname(sys.argv[0])
+        
+        # basic command
+        command = ["snakemake",
+                   "--core", str(args.thread),
+                   "-s", f"{cur_path}/Snakefile",
+                   "-d", args.run_dir,
+                   "--use-singularity"]
+        
+        # Add QC rules to trigger them
+        if args.quality:
+            command.append("quality_check")
+
+        # Add Snakemake options
+        if args.options:
+            command.append(args.options)
+
+        # Add mode. Must be at the end since everything behind --config will be interpreted as a config parameter
+        command.extend(["--config", f"mode={args.mode}"])
+
+        # Run the command
+        command_run = run(command)
