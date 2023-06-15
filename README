@@ -13,7 +13,7 @@ conda create -n nanoplasm
 conda install snakemake  
 conda install bwa
 
-![Nanoplasm_worflow](misc/NanoPlasm.png)
+![Nanoplasm_worflow](./misc/NanoPlasm.png)
 
 TO DO:
 - add steps to check files and files extension
