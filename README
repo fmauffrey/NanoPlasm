@@ -1,6 +1,15 @@
-Nanoplasm
+# Nanoplasm
 
-n
+NanoPlasm is a workflow dedicated to plasmid sequences assembly, typing and analysis based on long reads (Nanopore/PacBio).
+
+The tool is still under active development.
+
+## Requirements
+
+Some dependencies have to be installed for running NanoPlasm. It is highly advised to install them in a dedicated environment. Here is showed how to do it through conda:  
+conda create -n nanoplasm  
+conda install snakemake  
+conda install bwa
 
 ![Nanoplasm worflow](misc/NanoPlasm.png)
 

@@ -19,7 +19,7 @@ rule run:
 rule quality_check:
     message: "Quality check"
     input: expand("QC/{sample}_nanoq_report.txt", sample=config["samples"]),
-           expand("QC/{sample}_R1_fastqc.zip", sample=config["samples"]) if config["mode"] == "hybrid" else None
+           expand("QC/{sample}_R1_fastqc.zip", sample=config["samples"]) if config["mode"] == "hybrid" else ""
 
 
 ############### Rules common to long and hybrid mode ###############
