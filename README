@@ -4,6 +4,8 @@ NanoPlasm is a workflow dedicated to plasmid sequences assembly, typing and anal
 
 The tool is still under active development.
 
+sfsdfs
+
 ## Requirements
 
 Some dependencies have to be installed for running NanoPlasm. It is highly advised to install them in a dedicated environment. Here is showed how to do it through conda:  
