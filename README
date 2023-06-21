@@ -18,9 +18,10 @@ conda install bwa
 TO DO:
 - add steps to check files and files extension
 - add step to check pairs of long and short reads files if hybrid mode
+- implement checkpoints
 
 
 To installed in environment:
 - snakemake
 - BWA
-- test
+- biopython

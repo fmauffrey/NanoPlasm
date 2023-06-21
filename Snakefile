@@ -4,16 +4,10 @@ configfile: "config.yaml"
 
 ############### Overall rules ##################
 
-
 # Trigger run start with all samples
-if config["mode"] == "long":
-    final_input = expand("05-Homopolish/{sample}/consensus_homopolished.fasta", sample=config["samples"])
-elif config["mode"] == "hybrid":
-    final_input = expand("05-polypolish/{sample}/assembly.fasta", sample=config["samples"])
-
 rule run:
     message: "Starting Nanoplasm"
-    input: final_input
+    input: "07-resfinder/.done.log"
 
 # Trigger the quality check rules
 rule quality_check:
@@ -91,7 +85,7 @@ rule homopolish:
         model = config["homopolish"]["model"],
         db = config["homopolish"]["db"]
     shell:
-        "homopolish polish -a {input} -s {workflow.basedir}/{params.db} -m R10.3.pkl -o 05-Homopolish/{wildcards.sample} > {log}"
+        "homopolish polish -a {input} -s {workflow.basedir}/{params.db} -m R10.3.pkl -o 05-Homopolish/{wildcards.sample} > {log} 2>&1"
 
 
 ############### Rules for hybrid mode ###############
@@ -188,7 +182,37 @@ rule polypolish:
 ############### Rules for plasmids analysis ###############
 
 # Contigs classification
-#rule classification:
-#    message: "Contigs classification: {wildcards.sample}"
-#    input:
-#        fasta = "05-Homopolish/{sample}/consensus_homopolished.fasta" if config["mode"] == "long" else "05-polypolish/{sample}/assembly.fasta"
+rule classification:
+    message: "Contigs classification: {wildcards.sample}"
+    input: "05-Homopolish/{sample}/consensus_homopolished.fasta" if config["mode"] == "long" else "05-polypolish/{sample}/assembly.fasta"
+    output: 
+        log = "06-contigs/logs/{sample}_classification.log",
+        hidden_log = "06-contigs/.{sample}_plasmids_list.log"
+    params: 
+        sample = "{sample}"
+    script:
+        "bin/classify_contigs.py"
+
+# Gather plasmids names (served as a checkpoint for downstream rules)
+rule plasmids_list:
+    message: "Gathering plasmids names"
+    input: expand("06-contigs/.{sample}_plasmids_list.log", sample=config["samples"])
+    output: "06-contigs/.concat_plasmids_list.log"
+    shell:
+        "cat {input} > {output}"
+
+# ResFinder - Antimicrobial resistance genes
+rule resfinder:
+    message: "Resfinder"
+    input: "06-contigs/.concat_plasmids_list.log"
+    output: "07-resfinder/.done.log"
+    container: "docker://genomicepidemiology/resfinder"
+    params:
+        id_threshold = config["resfinder"]["id_threshold"],
+        coverage_threshold = config["resfinder"]["coverage_threshold"],
+        db = config["resfinder"]["db"]
+    shell:
+        """for i in $(cat {input});
+        do python -m resfinder -ifa 06-contigs/plasmids/$i --nanopore -acq -o 07-resfinder/$i -l {params.coverage_threshold} -t {params.id_threshold};
+        done;
+        touch {output}"""
