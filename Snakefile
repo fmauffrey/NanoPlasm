@@ -48,7 +48,7 @@ rule medaka:
     output: "04-Medaka/{sample}/consensus.fasta"
     log: "04-Medaka/{sample}/{sample}_medaka_log.txt"
     container: "docker://ontresearch/medaka"
-    threads: 12
+    threads: 24
     params:
         model = config["medaka"]["model"]
     shell:
@@ -77,7 +77,7 @@ rule flye:
     params:
         others = config["flye"]["others"]
     shell:
-        "flye --nano-hq {input} -t {threads} -o 03-assembly/{wildcards.sample} {params.others} > {log}"
+        "flye --nano-hq {input} -t {threads} -o 03-assembly/{wildcards.sample}_long {params.others} > {log} 2> /dev/null"
 
 # LONG MODE -- Homopolish
 rule homopolish:
@@ -146,7 +146,7 @@ rule unicycler:
     params:
         mode = config["unicycler"]["mode"]
     shell:
-        "unicycler -1 {input.short_1} -2 {input.short_2} -l {input.long} -o 03-assembly/{wildcards.sample} -t {threads} --mode {params.mode} "
+        "unicycler -1 {input.short_1} -2 {input.short_2} -l {input.long} -o 03-assembly/{wildcards.sample}_hybrid -t {threads} --mode {params.mode} "
         "--verbosity 0 --keep 0"
 
 # HYBRID MODE -- Short reads alignments for Polypolish
@@ -159,11 +159,12 @@ rule polypolish_prep:
     output: 
         alignments_1 = "05-polypolish/{sample}/alignments_1.sam",
         alignments_2 = "05-polypolish/{sample}/alignments_2.sam"
+    log: "05-polypolish/{sample}/{sample}_BWA.log"
     threads: 12
     shell:
         "bwa index {input.draft} > /dev/null 2>&1;"
-        "bwa mem -t {threads} -a {input.draft} {input.short_1} > {output.alignments_1} 2> /dev/null;"
-        "bwa mem -t {threads} -a {input.draft} {input.short_1} > {output.alignments_2} 2> /dev/null"
+        "bwa mem -t {threads} -a {input.draft} {input.short_1} > {output.alignments_1} 2> {log};"
+        "bwa mem -t {threads} -a {input.draft} {input.short_1} > {output.alignments_2} 2> {log}"
 
 # HYBRID MODE -- Assembly polyshing with polypolish
 rule polypolish:
@@ -176,8 +177,18 @@ rule polypolish:
         alignments_filt_1 = "05-polypolish/{sample}/filtered_1.sam",
         alignments_filt_2 = "05-polypolish/{sample}/filtered_2.sam",
         assembly = "05-polypolish/{sample}/assembly.fasta"
+    log: "05-polypolish/{sample}/{sample}_polypolish.log"
     container: "docker://staphb/polypolish"
     threads: 1
     shell:
         "polypolish_insert_filter.py --in1 {input.alignments_1} --in2 {input.alignments_2} --out1 {output.alignments_filt_1} --out2 {output.alignments_filt_2} > /dev/null 2>&1;"
-        "polypolish {input.draft} {output.alignments_filt_1} {output.alignments_filt_2} > {output.assembly} 2> /dev/null"
+        "polypolish {input.draft} {output.alignments_filt_1} {output.alignments_filt_2} > {output.assembly} 2> {log}"
+
+
+############### Rules for plasmids analysis ###############
+
+# Contigs classification
+#rule classification:
+#    message: "Contigs classification: {wildcards.sample}"
+#    input:
+#        fasta = "05-Homopolish/{sample}/consensus_homopolished.fasta" if config["mode"] == "long" else "05-polypolish/{sample}/assembly.fasta"
