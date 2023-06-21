@@ -7,7 +7,8 @@ configfile: "config.yaml"
 # Trigger run start with all samples
 rule run:
     message: "Starting Nanoplasm"
-    input: "07-resfinder/.done.log"
+    input: expand("08-mobsuite/{sample}_typing.txt", sample=config["samples"]),
+           expand("06-resfinder/{sample}/ResFinder_results_tab.txt", sample=config["samples"])          
 
 # Trigger the quality check rules
 rule quality_check:
@@ -181,38 +182,38 @@ rule polypolish:
 
 ############### Rules for plasmids analysis ###############
 
-# Contigs classification
-rule classification:
-    message: "Contigs classification: {wildcards.sample}"
-    input: "05-Homopolish/{sample}/consensus_homopolished.fasta" if config["mode"] == "long" else "05-polypolish/{sample}/assembly.fasta"
-    output: 
-        log = "06-contigs/logs/{sample}_classification.log",
-        hidden_log = "06-contigs/.{sample}_plasmids_list.log"
-    params: 
-        sample = "{sample}"
-    script:
-        "bin/classify_contigs.py"
-
-# Gather plasmids names (served as a checkpoint for downstream rules)
-rule plasmids_list:
-    message: "Gathering plasmids names"
-    input: expand("06-contigs/.{sample}_plasmids_list.log", sample=config["samples"])
-    output: "06-contigs/.concat_plasmids_list.log"
-    shell:
-        "cat {input} > {output}"
-
 # ResFinder - Antimicrobial resistance genes
 rule resfinder:
-    message: "Resfinder"
-    input: "06-contigs/.concat_plasmids_list.log"
-    output: "07-resfinder/.done.log"
+    message: "Resfinder: {wildcards.sample}"
+    input: "05-Homopolish/{sample}/consensus_homopolished.fasta" if config["mode"] == "long" else "05-polypolish/{sample}/assembly.fasta"
+    output: "06-resfinder/{sample}/ResFinder_results_tab.txt"
     container: "docker://genomicepidemiology/resfinder"
     params:
         id_threshold = config["resfinder"]["id_threshold"],
         coverage_threshold = config["resfinder"]["coverage_threshold"],
         db = config["resfinder"]["db"]
     shell:
-        """for i in $(cat {input});
-        do python -m resfinder -ifa 06-contigs/plasmids/$i --nanopore -acq -o 07-resfinder/$i -l {params.coverage_threshold} -t {params.id_threshold};
-        done;
-        touch {output}"""
+        "python -m resfinder -ifa {input} --nanopore -acq -o 06-resfinder/{wildcards.sample} -l {params.coverage_threshold} -t {params.id_threshold} > /dev/null 2>&1"
+
+# Mob-suite - plasmid typing
+rule mobsuite:
+    message: "Mob-Suite"
+    input: "05-Homopolish/{sample}/consensus_homopolished.fasta" if config["mode"] == "long" else "05-polypolish/{sample}/assembly.fasta"
+    output: "08-mobsuite/{sample}_typing.txt"
+    container: "docker://kumalpha/mob-suite"
+    threads: 24
+    log: "08-mobsuite/{sample}_typing.log"
+    shell:
+        "mob_typer -i {input} -o {output} -n {threads} > {log} 2>&1"
+
+# Contigs classification
+#rule classification:
+#    message: "Contigs classification: {wildcards.sample}"
+#    input: "05-Homopolish/{sample}/consensus_homopolished.fasta" if config["mode"] == "long" else "05-polypolish/{sample}/assembly.fasta"
+#    output: 
+#        log = "06-contigs/logs/{sample}_classification.log",
+#        hidden_log = "06-contigs/.{sample}_plasmids_list.log"
+#    params: 
+#        sample = "{sample}"
+#    script:
+#        "bin/classify_contigs.py"
