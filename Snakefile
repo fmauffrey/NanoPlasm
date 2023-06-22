@@ -7,8 +7,7 @@ configfile: "config.yaml"
 # Trigger run start with all samples
 rule run:
     message: "Starting Nanoplasm"
-    input: expand("08-mobsuite/{sample}_typing.txt", sample=config["samples"]),
-           expand("06-resfinder/{sample}/ResFinder_results_tab.txt", sample=config["samples"])          
+    input: "Typing_results.csv"
 
 # Trigger the quality check rules
 rule quality_check:
@@ -199,21 +198,29 @@ rule resfinder:
 rule mobsuite:
     message: "Mob-Suite"
     input: "05-Homopolish/{sample}/consensus_homopolished.fasta" if config["mode"] == "long" else "05-polypolish/{sample}/assembly.fasta"
-    output: "08-mobsuite/{sample}_typing.txt"
+    output: "07-mobsuite/{sample}_typing.txt"
     container: "docker://kumalpha/mob-suite"
     threads: 24
-    log: "08-mobsuite/{sample}_typing.log"
+    log: "07-mobsuite/{sample}_typing.log"
     shell:
-        "mob_typer -i {input} -o {output} -n {threads} > {log} 2>&1"
+        "mob_typer -i {input} -o {output} -n {threads} --multi > {log} 2>&1"
 
 # Contigs classification
-#rule classification:
-#    message: "Contigs classification: {wildcards.sample}"
-#    input: "05-Homopolish/{sample}/consensus_homopolished.fasta" if config["mode"] == "long" else "05-polypolish/{sample}/assembly.fasta"
-#    output: 
-#        log = "06-contigs/logs/{sample}_classification.log",
-#        hidden_log = "06-contigs/.{sample}_plasmids_list.log"
-#    params: 
-#        sample = "{sample}"
-#    script:
-#        "bin/classify_contigs.py"
+rule classification:
+    message: "Contigs classification"
+    input: expand("05-Homopolish/{sample}/consensus_homopolished.fasta", sample=config["samples"]) if config["mode"] == "long" 
+            else expand("05-polypolish/{sample}/assembly.fasta", sample=config["samples"])
+    output: "Sequences/contigs_classification.tsv"
+    script:
+        "bin/classify_contigs.py"
+
+# Gathering results from Mobsuite and Resfinder
+rule gather_results:
+    message: "Gathering results"
+    input: mobsuite = expand("07-mobsuite/{sample}_typing.txt", sample=config["samples"]),
+           resfinder = expand("06-resfinder/{sample}/ResFinder_results_tab.txt", sample=config["samples"]),
+           classification = "Sequences/contigs_classification.tsv"
+    output: "Typing_results.csv"
+    script:
+        "bin/gather_typing_results.py"
+
