@@ -66,7 +66,7 @@ rule flye:
     message: "Flye: {wildcards.sample}"
     input: "01-NanoFilt/{sample}_nanofilt.fastq"
     output: "03-assembly/{sample}_long/assembly.fasta"
-    log: "03-assembly/{sample}/{sample}_flye_log.txt"
+    log: "03-assembly/{sample}_long/{sample}_flye_log.txt"
     container: "docker://staphb/flye"
     threads: 12
     params:
