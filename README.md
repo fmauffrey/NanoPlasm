@@ -98,3 +98,6 @@ You can select the appropriate assembly mode based on the sequencing data availa
     nano analysis_folder/config.yaml
     # Start NanoPlasm run
     path/to/nanoplasm typing -d analysis_folder -t 24 --quality_check
+
+### Future features
+- Module for discarding reads when in excess. Samples with reads in excess (very high coverage) can lead to errors during Flye assembly.
