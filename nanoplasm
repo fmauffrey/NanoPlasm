@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     # Add subparser to allow the different commands
     subparser = parser.add_subparsers(dest='command')
-    init_parser = subparser.add_parser('init', description = "Create a run folder with a config file.")
+    init_parser = subparser.add_parser('init', description = "Generate the folder and configuration file for NanoPlasm analysis.")
     typing_parser = subparser.add_parser('typing', description = "Start Nanoplasm with long|hybrid mode.")
 
     # Arguments for config command

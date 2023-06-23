@@ -22,3 +22,7 @@ resfinder:
   db: "data/resfinder_db"
   id_threshold: 0.98
   coverage_threshold: 0.6
+mge-cluster:
+  perplexity: 30
+  min_cluster: 3
+  kmer: 31

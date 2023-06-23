@@ -7,7 +7,8 @@ configfile: "config.yaml"
 # Trigger run start with all samples
 rule run:
     message: "Starting Nanoplasm"
-    input: "Typing_results.csv"
+    input: "Typing_results.csv",
+            "08-mge-cluster/mge-cluster_results.csv"
 
 # Trigger the quality check rules
 rule quality_check:
@@ -209,10 +210,25 @@ rule mobsuite:
 rule classification:
     message: "Contigs classification"
     input: expand("05-Homopolish/{sample}/consensus_homopolished.fasta", sample=config["samples"]) if config["mode"] == "long" 
-            else expand("05-polypolish/{sample}/assembly.fasta", sample=config["samples"])
-    output: "Sequences/contigs_classification.tsv"
+           else expand("05-polypolish/{sample}/assembly.fasta", sample=config["samples"])
+    output: 
+        class_file = "Sequences/contigs_classification.tsv",
+        plasmids_list = ".plasmids_list.txt"
     script:
         "bin/classify_contigs.py"
+
+# Mge-cluster - clustering plasmids sequences based on unitigs
+rule mgecluster:
+    message: "Mge-cluster"
+    input: ".plasmids_list.txt"
+    output: "08-mge-cluster/mge-cluster_results.csv"
+    params:
+        perplexity = config["mge-cluster"]["perplexity"],
+        min_cluster = config["mge-cluster"]["min_cluster"],
+        kmer = config["mge-cluster"]["kmer"]
+    threads: 24
+    shell:
+        "mge_cluster --create --input {input} --outdir 08-mge-cluster --perplexity {params.perplexity} --min_cluster {params.min_cluster} --kmer {params.kmer} --threads {threads}"
 
 # Gathering results from Mobsuite and Resfinder
 rule gather_results:

@@ -7,8 +7,9 @@ import os
 
 min_size = snakemake.config["classify_contigs"]["min_size"]
 max_size = snakemake.config["classify_contigs"]["max_size"]
-output = snakemake.output[0]
 assemblies = snakemake.input[0]
+output = snakemake.output["class_file"]
+plasmids_files_path = snakemake.output["plasmids_list"]
 
 # If only one sample, must converted into list
 if type(assemblies) != "list":
@@ -20,7 +21,7 @@ if not os.path.exists("Sequences/plasmids"):
 if not os.path.exists("Sequences/chromosomes"):
     os.mkdir("Sequences/chromosomes")
 
-with open(output, "w") as report:
+with open(output, "w") as report, open(plasmids_files_path, "w") as plasmids_list:
     # Write report first line
     report.write("Sample\tContig ID\tType\tLength\n")
     
@@ -33,6 +34,7 @@ with open(output, "w") as report:
                 with open(f"Sequences/plasmids/{sample}_plasmid_{seq.id}.fasta", "w") as out:
                     SeqIO.write([seq], out, "fasta")
                 report.write(f"{sample}\t{seq.id}\tPlasmid\t{len(seq.seq)}\n")
+                plasmids_list.write(f"Sequences/plasmids/{sample}_plasmid_{seq.id}.fasta\n")
             
             # If chromosome
             elif max_size < len(seq.seq):
