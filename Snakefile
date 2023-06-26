@@ -43,7 +43,7 @@ rule medaka:
     output: "04-Medaka/{sample}/consensus.fasta"
     log: "04-Medaka/{sample}/{sample}_medaka_log.txt"
     container: "docker://ontresearch/medaka"
-    threads: 24
+    threads: 2
     params:
         model = config["medaka"]["model"]
     shell:
