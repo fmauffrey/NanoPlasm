@@ -7,12 +7,12 @@ import os
 
 min_size = snakemake.config["classify_contigs"]["min_size"]
 max_size = snakemake.config["classify_contigs"]["max_size"]
-assemblies = snakemake.input[0]
+assemblies = snakemake.input
 output = snakemake.output["class_file"]
 plasmids_files_path = snakemake.output["plasmids_list"]
 
 # If only one sample, must converted into list
-if type(assemblies) != "list":
+if len(assemblies) < 2:
     assemblies = [assemblies]
 
 # Create folders
