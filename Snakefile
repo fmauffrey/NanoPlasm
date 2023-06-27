@@ -7,7 +7,7 @@ configfile: "config.yaml"
 # Trigger run start with all samples
 rule run:
     message: "Starting Nanoplasm"
-    input: "Typing_results.csv",
+    input: "Typing_results.tsv",
             "08-mge-cluster/mge-cluster_results.csv"
 
 # Trigger the quality check rules
