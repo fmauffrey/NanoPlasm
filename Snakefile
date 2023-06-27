@@ -236,7 +236,7 @@ rule gather_results:
     input: mobsuite = expand("07-mobsuite/{sample}_typing.txt", sample=config["samples"]),
            resfinder = expand("06-resfinder/{sample}/ResFinder_results_tab.txt", sample=config["samples"]),
            classification = "Sequences/contigs_classification.tsv"
-    output: "Typing_results.csv"
+    output: "Typing_results.tsv"
     script:
         "bin/gather_typing_results.py"
 
