@@ -205,7 +205,7 @@ rule karga:
     params:
         db = config["karga"]["db"]
     shell:
-        """java -cp {workflow.basedir}/KARGA KARGA {input} d:{workflow.basedir}/{params.db} -Xmx16GB;
+        """java -cp {workflow.basedir}/KARGA/openjdk-8/KARGA KARGA {input} d:{workflow.basedir}/{params.db} -Xmx16GB;
         mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedReads.csv 09-karga;
         mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedGenes.csv 09-karga"""
 
