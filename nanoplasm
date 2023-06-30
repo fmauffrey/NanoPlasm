@@ -50,6 +50,25 @@ def create_config(nano_dir, ill_dir, run_dir):
         yaml.safe_dump(config_file, output, sort_keys=False)
 
 
+def update_config(nano_dir, ill_dir, run_dir):
+    # Update the configuration file
+
+    # Load the configuration file template
+    config_file = yaml.safe_load(open(f"{run_dir}/config.yaml", "r"))
+
+    # Define reads folders path and samples names and add the info to the config file
+    samples = [fastq.replace(".fastq", "") for fastq in os.listdir(nano_dir)]
+    samples_nano_path = os.path.abspath(nano_dir)
+    samples_ill_path = os.path.abspath(ill_dir) if ill_dir else ""
+    config_file["path_nano"] = samples_nano_path
+    config_file["path_ill"] = samples_ill_path
+    config_file["samples"] = samples
+
+    # Save new configuration file
+    with open(f"{run_dir}/config.yaml", "w") as output:
+        yaml.safe_dump(config_file, output, sort_keys=False)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plasmid typing with Nanopore or hybrid Nanopore/Illumina.")
 
@@ -57,6 +76,7 @@ if __name__ == "__main__":
     subparser = parser.add_subparsers(dest='command')
     init_parser = subparser.add_parser('init', description = "Generate the folder and configuration file for NanoPlasm analysis.")
     typing_parser = subparser.add_parser('typing', description = "Start Nanoplasm with long|hybrid mode.")
+    update_parser = subparser.add_parser('update', description = "Update the configuration file of a run folder.")
 
     # Arguments for config command
     init_parser.add_argument("-i", "--input", type=str, help="directory with Nanopore fastq files. Files must be in the following format: ID.fastq"
@@ -64,6 +84,14 @@ if __name__ == "__main__":
     init_parser.add_argument("-I", "--INPUT", type=str, help="directory with Illumina fastq files. Files must be in the following format: ID_R#.fastq"
                              , dest="folder_ill", metavar="dir", default=None)
     init_parser.add_argument("-o", "--output", type=str, help="directory to create for the run", dest="run_dir",
+                               required=True, metavar="dir")
+    
+    # Arguments for config command
+    update_parser.add_argument("-i", "--input", type=str, help="directory with Nanopore fastq files. Files must be in the following format: ID.fastq"
+                             , dest="folder_nano", required=True, metavar="dir")
+    update_parser.add_argument("-I", "--INPUT", type=str, help="directory with Illumina fastq files. Files must be in the following format: ID_R#.fastq"
+                             , dest="folder_ill", metavar="dir", default=None)
+    update_parser.add_argument("-o", "--output", type=str, help="directory to create for the run", dest="run_dir",
                                required=True, metavar="dir")
 
     # Arguments for typing command
@@ -79,12 +107,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.command not in ["init", "typing"]:
+    if args.command not in ["init", "typing", "update"]:
         sys.exit("Commands available: init, typing")
 
     if args.command == "init":
         if check_files(args.folder_nano) and check_files(args.folder_nano):
             create_config(args.folder_nano, args.folder_ill, args.run_dir)
+
+    elif args.command == "update":
+        if check_files(args.folder_nano) and check_files(args.folder_nano):
+            update_config(args.folder_nano, args.folder_ill, args.run_dir)
 
     elif args.command == "typing":
         cur_path = os.path.dirname(sys.argv[0])
