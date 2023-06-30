@@ -7,8 +7,9 @@ configfile: "config.yaml"
 # Trigger run start with all samples
 rule run:
     message: "Starting Nanoplasm"
-    input: "Typing_results.csv",
-            "08-mge-cluster/mge-cluster_results.csv"
+    input: "Typing_results.tsv",
+            "08-mge-cluster/mge-cluster_results.csv",
+            expand("09-karga/{sample}_nanofilt_KARGA_mappedReads.csv", sample=config["samples"])
 
 # Trigger the quality check rules
 rule quality_check:
@@ -43,7 +44,7 @@ rule medaka:
     output: "04-Medaka/{sample}/consensus.fasta"
     log: "04-Medaka/{sample}/{sample}_medaka_log.txt"
     container: "docker://ontresearch/medaka"
-    threads: 24
+    threads: 2
     params:
         model = config["medaka"]["model"]
     shell:
@@ -66,7 +67,7 @@ rule flye:
     message: "Flye: {wildcards.sample}"
     input: "01-NanoFilt/{sample}_nanofilt.fastq"
     output: "03-assembly/{sample}_long/assembly.fasta"
-    log: "03-assembly/{sample}/{sample}_flye_log.txt"
+    log: "03-assembly/{sample}_long/{sample}_flye_log.txt"
     container: "docker://staphb/flye"
     threads: 12
     params:
@@ -195,6 +196,20 @@ rule resfinder:
     shell:
         "python -m resfinder -ifa {input} --nanopore -acq -o 06-resfinder/{wildcards.sample} -l {params.coverage_threshold} -t {params.id_threshold} > /dev/null 2>&1"
 
+# KARGA - Antimicrobial resistance genes
+rule karga:
+    message: "KmerResistance: {wildcards.sample}"
+    input: "01-NanoFilt/{sample}_nanofilt.fastq"
+    output: "09-karga/{sample}_nanofilt_KARGA_mappedReads.csv"
+    threads: 24
+    params:
+        db = config["karga"]["db"]
+    shell:
+        """java -cp {workflow.basedir}/KARGA KARGA {input} d:{workflow.basedir}/{params.db} -Xmx16GB;
+        mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedReads.csv 09-karga;
+        mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedGenes.csv 09-karga"""
+
+
 # Mob-suite - plasmid typing
 rule mobsuite:
     message: "Mob-Suite"
@@ -236,7 +251,7 @@ rule gather_results:
     input: mobsuite = expand("07-mobsuite/{sample}_typing.txt", sample=config["samples"]),
            resfinder = expand("06-resfinder/{sample}/ResFinder_results_tab.txt", sample=config["samples"]),
            classification = "Sequences/contigs_classification.tsv"
-    output: "Typing_results.csv"
+    output: "Typing_results.tsv"
     script:
         "bin/gather_typing_results.py"
 

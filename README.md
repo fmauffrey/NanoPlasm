@@ -98,3 +98,13 @@ You can select the appropriate assembly mode based on the sequencing data availa
     nano analysis_folder/config.yaml
     # Start NanoPlasm run
     path/to/nanoplasm typing -d analysis_folder -t 24 --quality_check
+
+### Future features
+- Module for discarding reads when in excess. Samples with reads in excess (very high coverage) can lead to errors during Flye assembly.
+- Merge functions for combining different analysis folders.
+
+### Tips
+- The pipeline might crash because a sample assembly failed.  
+This can be due to a very coverage for this sample leading Flye to fail disjointing assembly. To avoid this error, you can use the --asm-coverage and --genome-size options in Flye to limit the coverage in your assemblies. Add these options in the config.yaml file of the run.
+- I need to analyse groups of sample with different parameters but I want to compare them all together ultimately.  
+Run the analyses in different folders with appropriate parameters for each analysis and, once all analyses are completed, merge all folders using the merge function.
