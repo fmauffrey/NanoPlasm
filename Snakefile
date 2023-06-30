@@ -8,7 +8,8 @@ configfile: "config.yaml"
 rule run:
     message: "Starting Nanoplasm"
     input: "Typing_results.tsv",
-            "08-mge-cluster/mge-cluster_results.csv"
+            "08-mge-cluster/mge-cluster_results.csv",
+            expand("09-karga/{sample}_nanofilt_KARGA_mappedReads.csv", sample=config["samples"])
 
 # Trigger the quality check rules
 rule quality_check:
@@ -194,6 +195,20 @@ rule resfinder:
         db = config["resfinder"]["db"]
     shell:
         "python -m resfinder -ifa {input} --nanopore -acq -o 06-resfinder/{wildcards.sample} -l {params.coverage_threshold} -t {params.id_threshold} > /dev/null 2>&1"
+
+# KARGA - Antimicrobial resistance genes
+rule karga:
+    message: "KmerResistance: {wildcards.sample}"
+    input: "01-NanoFilt/{sample}_nanofilt.fastq"
+    output: "09-karga/{sample}_nanofilt_KARGA_mappedReads.csv"
+    threads: 24
+    params:
+        db = config["karga"]["db"]
+    shell:
+        """java -cp {workflow.basedir}/KARGA KARGA {input} d:{workflow.basedir}/{params.db} -Xmx16GB;
+        mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedReads.csv 09-karga;
+        mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedGenes.csv 09-karga"""
+
 
 # Mob-suite - plasmid typing
 rule mobsuite:
