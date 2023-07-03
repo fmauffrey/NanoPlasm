@@ -34,7 +34,7 @@ def create_config(nano_dir, ill_dir, run_dir):
     samples = [fastq.replace(".fastq", "") for fastq in os.listdir(nano_dir)]
     samples_nano_path = os.path.abspath(nano_dir)
     samples_ill_path = os.path.abspath(ill_dir) if ill_dir else ""
-    config_file = {"path_nano": samples_nano_path, "path_ill": samples_ill_path, "samples": samples, **config_template}
+    config_file = {"path_nano": samples_nano_path, "path_ill": samples_ill_path, **config_template, "samples": samples}
 
     # Save new configuration file
     try:
