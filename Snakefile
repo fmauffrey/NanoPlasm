@@ -198,7 +198,7 @@ rule resfinder:
 
 # KARGA - Antimicrobial resistance genes
 rule karga:
-    message: "KmerResistance: {wildcards.sample}"
+    message: "KARGA: {wildcards.sample}"
     input: "01-NanoFilt/{sample}_nanofilt.fastq"
     output: "09-karga/{sample}_nanofilt_KARGA_mappedReads.csv"
     threads: 24
