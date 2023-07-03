@@ -9,7 +9,8 @@ rule run:
     message: "Starting Nanoplasm"
     input: "Typing_results.tsv",
             "08-mge-cluster/mge-cluster_results.csv",
-            expand("09-karga/{sample}_nanofilt_KARGA_mappedReads.csv", sample=config["samples"])
+            expand("09-karga/{sample}_nanofilt_KARGA_mappedReads.csv", sample=config["samples"]),
+            expand("09-karga/{sample}_contigs_amr_profile.tsv", sample=config["samples"])
 
 # Trigger the quality check rules
 rule quality_check:
@@ -209,6 +210,26 @@ rule karga:
         mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedReads.csv 09-karga;
         mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedGenes.csv 09-karga"""
 
+# KARGA - Align fastq on assembly with minimap2 to get reads-plasmids relationship
+rule minimap2:
+    message: "Minimap2: {wildcards.sample}"
+    input: 
+        fastq = "01-NanoFilt/{sample}_nanofilt.fastq",
+        assembly = "03-assembly/{sample}_long/assembly.fasta"
+    output: "09-karga/{sample}_contigs_on_assembly.paf"
+    threads: 24
+    container: "docker://nanozoo/minimap2"
+    shell:
+        "minimap2 {input.assembly} {input.fastq} -o {output} -t {threads}"
+
+rule reads_to_contigs:
+    message: "Link reads and contigs: {wildcards.sample}"
+    input: 
+        alignment = "09-karga/{sample}_contigs_on_assembly.paf",
+        karga = "09-karga/{sample}_nanofilt_KARGA_mappedReads.csv"
+    output: "09-karga/{sample}_contigs_amr_profile.tsv"
+    script:
+        "bin/reads_to_contigs.py"
 
 # Mob-suite - plasmid typing
 rule mobsuite:
@@ -250,6 +271,7 @@ rule gather_results:
     message: "Gathering results"
     input: mobsuite = expand("07-mobsuite/{sample}_typing.txt", sample=config["samples"]),
            resfinder = expand("06-resfinder/{sample}/ResFinder_results_tab.txt", sample=config["samples"]),
+           karga = expand("09-karga/{sample}_contigs_amr_profile.tsv", sample=config["samples"]),
            classification = "Sequences/contigs_classification.tsv"
     output: "Typing_results.tsv"
     script:

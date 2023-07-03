@@ -38,7 +38,7 @@ def add_mobsuite(master_df, mob_files):
     " Add mobsuite results to the master file "
 
     # Creation of dataframe for mobsuite results
-    res_df = pd.DataFrame({"Sample":[], "Contig ID":[], "Mob-suite replicon types":[], "Mob-suite relaxase types":[]})
+    mob_df = pd.DataFrame({"Sample":[], "Contig ID":[], "Mob-suite replicon types":[], "Mob-suite relaxase types":[]})
 
     # Parsing of all mobsuite files
     for f in mob_files:
@@ -53,10 +53,10 @@ def add_mobsuite(master_df, mob_files):
 
         # Looping over results dict to complete dataframe. The label used is the length of the dataframe, creating a simple index.
         for elt in results:
-            res_df.loc[len(res_df)] = [sample, elt, results[elt][0], results[elt][1]]
+            mob_df.loc[len(mob_df)] = [sample, elt, results[elt][0], results[elt][1]]
 
     # Merging the classification dataframe with the mobsuite dataframe
-    new_df = master_df.merge(res_df, how="outer", on=["Sample", "Contig ID"])
+    new_df = master_df.merge(mob_df, how="outer", on=["Sample", "Contig ID"])
 
     return new_df
 
@@ -72,13 +72,11 @@ if __name__ == "__main__":
     # If only one sample, must converted into list
     if len(res_files) > 1:
         res_list = res_files
-    else:
-        res_list = [res_files[0]]
-    
-    if len(mob_files) > 1:
         mob_list = mob_files
     else:
-        mob_list = [mob_files[0]]
+        res_list = [str(res_files)]
+        mob_list = [str(mob_files)]
+        
 
     # Add information for each analysis
     infos_resfinder = add_resfinder(class_file, res_list)
