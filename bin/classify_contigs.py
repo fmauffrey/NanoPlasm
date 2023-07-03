@@ -13,7 +13,7 @@ plasmids_files_path = snakemake.output["plasmids_list"]
 
 # If only one sample, must converted into list
 if len(assemblies) < 2:
-    assemblies = [assemblies]
+    assemblies = [str(assemblies)]
 
 # Create folders
 if not os.path.exists("Sequences/plasmids"):
