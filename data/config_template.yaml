@@ -29,3 +29,5 @@ mge-cluster:
   perplexity: 30
   min_cluster: 3
   kmer: 31
+prokka:
+  options: ""

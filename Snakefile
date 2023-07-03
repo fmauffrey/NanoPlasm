@@ -1,3 +1,5 @@
+import os
+
 # Config file with run parameters
 configfile: "config.yaml"
 
@@ -10,7 +12,8 @@ rule run:
     input: "Typing_results.tsv",
             "08-mge-cluster/mge-cluster_results.csv",
             expand("09-karga/{sample}_nanofilt_KARGA_mappedReads.csv", sample=config["samples"]),
-            expand("09-karga/{sample}_contigs_amr_profile.tsv", sample=config["samples"])
+            expand("09-karga/{sample}_contigs_amr_profile.tsv", sample=config["samples"]),
+            ".annotations.txt"
 
 # Trigger the quality check rules
 rule quality_check:
@@ -277,3 +280,19 @@ rule gather_results:
     script:
         "bin/gather_typing_results.py"
 
+# PROKKA - annotation of plasmids
+rule prokka:
+    message: "Prokka"
+    input: "Sequences/contigs_classification.tsv"
+    output: ".annotations.txt"
+    container: "docker://staphb/prokka"
+    params:
+        options = config["prokka"]["options"]
+    shell:
+        """
+        mkdir -p 10-prokka;
+        for i in $(ls Sequences/plasmids); 
+            do prokka --force --outdir 10-prokka/$i {params.options} Sequences/plasmids/$i;
+        done;
+        touch {output}
+        """
