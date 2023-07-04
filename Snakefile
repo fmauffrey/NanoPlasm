@@ -288,11 +288,12 @@ rule prokka:
     container: "docker://staphb/prokka"
     params:
         options = config["prokka"]["options"]
+    threads: 48
     shell:
         """
         mkdir -p 10-prokka;
         for i in $(ls Sequences/plasmids); 
-            do prokka --force --outdir 10-prokka/$i {params.options} Sequences/plasmids/$i;
+            do prokka --force --outdir 10-prokka/$i -t {threads} {params.options} Sequences/plasmids/$i;
         done;
         touch {output}
         """
