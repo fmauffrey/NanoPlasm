@@ -70,8 +70,12 @@ rule nanoq:
 rule qc_summary:
     message: "Qc summary"
     input: 
-        nanoq = expand("QC/{sample}_nanoq_report.txt", sample=config["samples"])
+        nanoq = expand("QC/{sample}_nanoq_report.txt", sample=config["samples"]),
+        flye = expand("03-assembly/{sample}_long/assembly_info.txt", sample=config["samples"])
     output: "QCsummary.txt"
+    params:
+        plasmid_min_size = config["classify_contigs"]["min_size"],
+        plasmid_max_size = config["classify_contigs"]["max_size"]
     script:
         "bin/QCsummary.py"
 

@@ -2,6 +2,7 @@
 
 import pandas as pd
 import re
+from statistics import mean
 
 """ Compile statistics on reads and assembly """
 
@@ -9,7 +10,7 @@ def nanoq_parsing(files):
     " Reads and extracts information from nanoq summary files "
 
     # Creation of the dataframe
-    qc_df = pd.DataFrame({"Sample":[], 
+    nanoq_df = pd.DataFrame({"Sample":[], 
                            "Number of reads":[], 
                            "Number of bases":[],
                            "N50 reads length":[], 
@@ -29,21 +30,66 @@ def nanoq_parsing(files):
         mean_reads_quality = re.search(r'(?<=Mean read quality:    )[0-9]*', text).group()
 
         # Add info to the dataframe
-        qc_df.loc[len(qc_df)] = [sample, reads_number, base_number, N50, longest_read, mean_reads_length, mean_reads_quality]
+        nanoq_df.loc[len(nanoq_df)] = [sample, reads_number, base_number, N50, longest_read, mean_reads_length, mean_reads_quality]
 
-    return qc_df
+    return nanoq_df
+
+
+def flye_parsing(files, df, min_size, max_size):
+    " Reads and extracts information from flye summary files "
+
+    # Creation of the dataframe
+    flye_df = pd.DataFrame({"Sample":[], 
+                           "Number of plasmids":[], 
+                           "Number of circular plasmids":[],
+                           "Mean plasmids coverage":[]})
+
+    # Parsing of all flye assembly info files
+    for f in files:
+        sample = f.split("/")[1].split("_")[0] # extracted from the path
+        plasm, circular_plasm, cov_list = 0, 0, []
+        
+        text = open(f, "r").readlines()
+        for line in text[1:]:
+            seq_size = int(line.split("\t")[1])
+            cov = int(line.split("\t")[2])
+            circ = line.split("\t")[3]
+            if min_size <= seq_size <= max_size:
+                plasm += 1
+                cov_list.append(cov)
+                if circ == "Y":
+                    circular_plasm += 1
+
+        # Check if at least one plasmid
+        if not cov_list:
+            mean_cov = 0
+        else:
+            mean_cov = round(mean(cov_list))
+
+        # Add info to the dataframe
+        flye_df.loc[len(flye_df)] = [sample, plasm, circular_plasm, mean_cov]
+
+    # Merge dataframes
+    new_df = df.merge(flye_df, how="outer", on=["Sample"])
+
+    return new_df
 
 
 if __name__ == "__main__":
     # Load files list
     qc_files = snakemake.input["nanoq"]
+    flye_files = snakemake.input["flye"]
+    plasmid_min_size = snakemake.params["plasmid_min_size"]
+    plasmid_max_size = snakemake.params["plasmid_max_size"]
 
     # If only one sample, must converted into list
     if len(qc_files) == 1:
         qc_files = [str(qc_files)]
+        flye_files = [str(flye_files)]
     
     # Parse files and generate dataframe
-    df = nanoq_parsing(qc_files)
+    df_nanoq = nanoq_parsing(qc_files)
+    df = flye_parsing(flye_files, df_nanoq, plasmid_min_size, plasmid_max_size)
     
     # Save file
     df.to_csv(snakemake.output[0], sep="\t")
