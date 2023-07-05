@@ -42,12 +42,13 @@ def flye_parsing(files, df, min_size, max_size):
     flye_df = pd.DataFrame({"Sample":[], 
                            "Number of plasmids":[], 
                            "Number of circular plasmids":[],
+                           "Chromosome coverage":[],
                            "Mean plasmids coverage":[]})
 
     # Parsing of all flye assembly info files
     for f in files:
         sample = f.split("/")[1].split("_")[0] # extracted from the path
-        plasm, circular_plasm, cov_list = 0, 0, []
+        plasm, circular_plasm, chrom_cov, cov_list = 0, 0, 0, []
         
         text = open(f, "r").readlines()
         for line in text[1:]:
@@ -59,7 +60,9 @@ def flye_parsing(files, df, min_size, max_size):
                 cov_list.append(cov)
                 if circ == "Y":
                     circular_plasm += 1
-
+            else:
+                chrom_cov = cov
+        
         # Check if at least one plasmid
         if not cov_list:
             mean_cov = 0
@@ -67,7 +70,7 @@ def flye_parsing(files, df, min_size, max_size):
             mean_cov = round(mean(cov_list))
 
         # Add info to the dataframe
-        flye_df.loc[len(flye_df)] = [sample, plasm, circular_plasm, mean_cov]
+        flye_df.loc[len(flye_df)] = [sample, plasm, circular_plasm, chrom_cov, mean_cov]
 
     # Merge dataframes
     new_df = df.merge(flye_df, how="outer", on=["Sample"])
