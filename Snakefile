@@ -19,7 +19,7 @@ rule run:
 rule quality_check:
     message: "Quality check"
     input: expand("QC/{sample}_nanoq_report.txt", sample=config["samples"]),
-           expand("QC/{sample}_R1_fastqc.zip", sample=config["samples"]) if config["mode"] == "hybrid" else ""
+           "QCsummary.txt"
 
 
 ############### Rules common to long and hybrid mode ###############
@@ -65,6 +65,15 @@ rule nanoq:
     container: "docker://jimmyliu1326/nanoq"        
     shell:
         "nanoq -i {input} -s -vvv 2> {output}"
+
+# LONG MODE -- QC summary
+rule qc_summary:
+    message: "Qc summary"
+    input: 
+        nanoq = expand("QC/{sample}_nanoq_report.txt", sample=config["samples"])
+    output: "QCsummary.txt"
+    script:
+        "bin/QCsummary.py"
 
 # LONG MODE -- Assembly with Flye
 rule flye:
