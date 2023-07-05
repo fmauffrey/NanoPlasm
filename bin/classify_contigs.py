@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Isolate putative plasmids contigs from assemblies
+""" Isolate putative plasmids contigs from assemblies """
 
 from Bio import SeqIO
 import os
