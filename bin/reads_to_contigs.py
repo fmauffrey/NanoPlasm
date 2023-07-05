@@ -24,14 +24,14 @@ def parse(karga, alignment, f_out):
         try:
             contig = reads_contigs[read_ID]
         except KeyError:
-            pass
+            continue
 
         resistance = line.split(",")[2]
         try:
             res_cat = resistance.split("|")[1]
             res_gene = resistance.split("|")[4].replace("\n", "")
         except IndexError:
-            pass
+            continue
 
         # Create nested dictionary checking if value already present
         output.setdefault(contig, {}).setdefault(res_cat, []).append(res_gene)

@@ -108,7 +108,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.command not in ["init", "typing", "update"]:
-        sys.exit("Commands available: init, typing")
+        sys.exit("Commands available: init, typing, update")
 
     if args.command == "init":
         if check_files(args.folder_nano) and check_files(args.folder_nano):

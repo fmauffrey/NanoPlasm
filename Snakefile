@@ -293,7 +293,7 @@ rule prokka:
         """
         mkdir -p 10-prokka;
         for i in $(ls Sequences/plasmids); 
-            do prokka --force --outdir 10-prokka/$i -t {threads} {params.options} Sequences/plasmids/$i;
+            do prokka --force --outdir 10-prokka/$i -cpus {threads} {params.options} Sequences/plasmids/$i;
         done;
         touch {output}
         """
