@@ -224,7 +224,7 @@ rule karga:
     params:
         db = config["karga"]["db"]
     shell:
-        """java -cp {workflow.basedir}/KARGA/openjdk-8/KARGA KARGA {input} d:{workflow.basedir}/{params.db} -Xmx16GB;
+        """java -cp {workflow.basedir}/KARGA/openjdk-8/KARGA KARGA {input} d:{workflow.basedir}/{params.db} -Xmx16GB > /dev/null 2>&1;
         mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedReads.csv 09-karga;
         mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedGenes.csv 09-karga"""
 
@@ -238,7 +238,7 @@ rule minimap2:
     threads: 24
     container: "docker://nanozoo/minimap2"
     shell:
-        "minimap2 {input.assembly} {input.fastq} -o {output} -t {threads}"
+        "minimap2 {input.assembly} {input.fastq} -o {output} -t {threads} > /dev/null 2>&1"
 
 rule reads_to_contigs:
     message: "Link reads and contigs: {wildcards.sample}"
@@ -282,7 +282,7 @@ rule mgecluster:
         kmer = config["mge-cluster"]["kmer"]
     threads: 24
     shell:
-        "mge_cluster --create --input {input} --outdir 08-mge-cluster --perplexity {params.perplexity} --min_cluster {params.min_cluster} --kmer {params.kmer} --threads {threads}"
+        "mge_cluster --create --input {input} --outdir 08-mge-cluster --perplexity {params.perplexity} --min_cluster {params.min_cluster} --kmer {params.kmer} --threads {threads} > /dev/null 2>&1"
 
 # Gathering results from Mobsuite and Resfinder
 rule gather_results:
@@ -308,7 +308,7 @@ rule prokka:
         """
         mkdir -p 10-prokka;
         for i in $(ls Sequences/plasmids); 
-            do prokka --force --outdir 10-prokka/$i -cpus {threads} {params.options} Sequences/plasmids/$i;
+            do prokka --force --outdir 10-prokka/$i -cpus {threads} {params.options} Sequences/plasmids/$i > /dev/null 2>&1;
         done;
         touch {output}
         """
