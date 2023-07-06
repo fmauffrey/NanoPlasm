@@ -41,7 +41,7 @@ def parse(karga, alignment, f_out):
         for contig in output:
             result = ""
             for cat, genes in output[contig].items():
-                result += f'{cat}:{genes} '
+                result += f'{cat}:{list(set(genes))} '
             result = result.strip()
 
             out.write(f"{contig}\t{result}\n")
