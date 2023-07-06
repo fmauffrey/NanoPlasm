@@ -83,7 +83,9 @@ rule qc_summary:
 rule flye:
     message: "Flye: {wildcards.sample}"
     input: "01-NanoFilt/{sample}_nanofilt.fastq"
-    output: "03-assembly/{sample}_long/assembly.fasta"
+    output: 
+        assembly = "03-assembly/{sample}_long/assembly.fasta",
+        info = "03-assembly/{sample}_long/assembly_info.txt"
     log: "03-assembly/{sample}_long/{sample}_flye_log.txt"
     container: "docker://staphb/flye"
     threads: 12
