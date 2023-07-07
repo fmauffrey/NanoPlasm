@@ -126,7 +126,8 @@ if __name__ == "__main__":
                    "--core", str(args.thread),
                    "-s", f"{cur_path}/Snakefile",
                    "-d", args.run_dir,
-                   "--use-singularity"]
+                   "--use-singularity",
+                   "run"]
         
         # Add QC rules to trigger them
         if args.quality:
