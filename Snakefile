@@ -233,7 +233,7 @@ rule minimap2:
     message: "Minimap2: {wildcards.sample}"
     input: 
         fastq = "01-NanoFilt/{sample}_nanofilt.fastq",
-        assembly = "03-assembly/{sample}_long/assembly.fasta"
+        assembly = "05-Homopolish/{sample}/consensus_homopolished.fasta" if config["mode"] == "long" else "05-polypolish/{sample}/assembly.fasta"
     output: "09-karga/{sample}_contigs_on_assembly.paf"
     threads: 24
     container: "docker://nanozoo/minimap2"
