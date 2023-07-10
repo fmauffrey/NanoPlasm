@@ -17,7 +17,7 @@ unicycler:
   mode: "normal"
 classify_contigs:
   min_size: 1000
-  max_size: 300000
+  max_size: 500000
 resfinder:
   db: "data/resfinder_db"
   id_threshold: 0.98
