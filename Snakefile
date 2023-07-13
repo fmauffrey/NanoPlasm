@@ -289,7 +289,6 @@ rule gather_results:
     message: "Gathering results"
     input: mobsuite = expand("07-mobsuite/{sample}_typing.txt", sample=config["samples"]),
            resfinder = expand("06-resfinder/{sample}/ResFinder_results_tab.txt", sample=config["samples"]),
-           karga = expand("09-karga/{sample}_contigs_amr_profile.tsv", sample=config["samples"]),
            classification = "Sequences/contigs_classification.tsv"
     output: "Typing_results.tsv"
     script:
