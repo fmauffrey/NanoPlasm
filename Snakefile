@@ -10,7 +10,7 @@ configfile: "config.yaml"
 rule run:
     message: "Starting Nanoplasm"
     input: "Typing_results.tsv",
-            "08-mge-cluster/mge-cluster_results.csv",
+           "08-mge-cluster/mge-cluster_results.csv",
             expand("09-karga/{sample}_nanofilt_KARGA_mappedReads.csv", sample=config["samples"]),
             expand("09-karga/{sample}_contigs_amr_profile.tsv", sample=config["samples"]),
             ".annotations.txt"
@@ -47,7 +47,7 @@ rule medaka:
         assembly = "03-assembly/{sample}_long/assembly.fasta" if config["mode"] == "long"  else "03-assembly/{sample}_hybrid/assembly.fasta"
     output: "04-Medaka/{sample}/consensus.fasta"
     log: "04-Medaka/{sample}/{sample}_medaka_log.txt"
-    container: "docker://ontresearch/medaka"
+    container: "docker://nanozoo/medaka"
     threads: 2
     params:
         model = config["medaka"]["model"]
@@ -106,7 +106,7 @@ rule homopolish:
         model = config["homopolish"]["model"],
         db = config["homopolish"]["db"]
     shell:
-        "homopolish polish -a {input} -s {workflow.basedir}/{params.db} -m R10.3.pkl -o 05-Homopolish/{wildcards.sample} > {log} 2>&1"
+        "homopolish polish -a {input} -s {workflow.basedir}/{params.db} -m {params.model} -o 05-Homopolish/{wildcards.sample} > {log} 2>&1"
 
 
 ############### Rules for hybrid mode ###############
