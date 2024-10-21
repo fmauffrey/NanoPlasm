@@ -22,9 +22,6 @@ resfinder:
   db: "data/resfinder_db"
   id_threshold: 0.98
   coverage_threshold: 0.6
-karga:
-  kmer_size: 17
-  db: "data/megares_database_v3.00.fasta"
 mge-cluster:
   perplexity: 30
   min_cluster: 3

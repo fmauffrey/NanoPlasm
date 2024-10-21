@@ -11,8 +11,6 @@ rule run:
     message: "Starting Nanoplasm"
     input: "Typing_results.tsv",
            "08-mge-cluster/mge-cluster_results.csv",
-            expand("09-karga/{sample}_nanofilt_KARGA_mappedReads.csv", sample=config["samples"]),
-            expand("09-karga/{sample}_contigs_amr_profile.tsv", sample=config["samples"]),
             ".annotations.txt"
 
 # Trigger the quality check rules
@@ -214,40 +212,6 @@ rule resfinder:
         db = config["resfinder"]["db"]
     shell:
         "python -m resfinder -ifa {input} --nanopore -acq -o 06-resfinder/{wildcards.sample} -l {params.coverage_threshold} -t {params.id_threshold} > /dev/null 2>&1"
-
-# KARGA - Antimicrobial resistance genes
-rule karga:
-    message: "KARGA: {wildcards.sample}"
-    input: "01-NanoFilt/{sample}_nanofilt.fastq"
-    output: "09-karga/{sample}_nanofilt_KARGA_mappedReads.csv"
-    threads: 24
-    params:
-        db = config["karga"]["db"]
-    shell:
-        """java -cp {workflow.basedir}/KARGA/openjdk-8/KARGA KARGA {input} d:{workflow.basedir}/{params.db} -Xmx16GB > /dev/null 2>&1;
-        mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedReads.csv 09-karga;
-        mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedGenes.csv 09-karga"""
-
-# KARGA - Align fastq on assembly with minimap2 to get reads-plasmids relationship
-rule minimap2:
-    message: "Minimap2: {wildcards.sample}"
-    input: 
-        fastq = "01-NanoFilt/{sample}_nanofilt.fastq",
-        assembly = "05-Homopolish/{sample}/consensus_homopolished.fasta" if config["mode"] == "long" else "05-polypolish/{sample}/assembly.fasta"
-    output: "09-karga/{sample}_contigs_on_assembly.paf"
-    threads: 24
-    container: "docker://nanozoo/minimap2"
-    shell:
-        "minimap2 {input.assembly} {input.fastq} -o {output} -t {threads} > /dev/null 2>&1"
-
-rule reads_to_contigs:
-    message: "Link reads and contigs: {wildcards.sample}"
-    input: 
-        alignment = "09-karga/{sample}_contigs_on_assembly.paf",
-        karga = "09-karga/{sample}_nanofilt_KARGA_mappedReads.csv"
-    output: "09-karga/{sample}_contigs_amr_profile.tsv"
-    script:
-        "bin/reads_to_contigs.py"
 
 # Mob-suite - plasmid typing
 rule mobsuite:
