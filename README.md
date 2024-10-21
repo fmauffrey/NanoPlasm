@@ -1,9 +1,7 @@
 # NanoPlasm
 v1.0  
 
-NanoPlasm is a specialized workflow designed for the purpose of assembling, typing, and analyzing plasmid sequences using long reads such as Nanopore or PacBio, as well as a combination of long and short reads. To ensure reliability, reproducibility, and optimization in the analysis process, NanoPlasm harnesses the power of the Snakemake workflow framework.
-
-The tool is still under development.
+NanoPlasm is a workflow designed for the purpose of assembling, typing, and analyzing plasmid sequences using Nanopore long reads, as well as a combination of long and short reads. To ensure reliability, reproducibility, and optimization in the analysis process, NanoPlasm harnesses the power of the Snakemake workflow framework.
 
 ## Workflow overview
 
@@ -11,7 +9,7 @@ The tool is still under development.
 
 ## Install
 
-Currently, the only method of installing and utilizing NanoPlasm consists in cloning this repository and subsequently installing the various dependencies and databases (as outlined below).
+In order to install and use NanoPlasm, you will need to clone this repository and install dependencies as outlined below.
 
     # Clone NanoPlasm repository
     git clone https://github.com/Flomauf/NanoPlasm.git NanoPlasm
@@ -36,11 +34,9 @@ In order for Homopolish to function properly, a dedicated database is necessary.
     # Install database
     sh install_db.sh
 
-NanoPlasm is now ready to use.
-
 ## Usage
 
-To streamline the usage of NanoPlasm, a wrapper script has been implemented to facilitate the invocation of the Snakemake pipeline. However, if needed, arguments can still be passed to Snakemake using the --options argument, allowing for additional customization and flexibility.  
+To ease the usage of NanoPlasm, a wrapper script has been implemented to facilitate the invocation of the Snakemake pipeline. However, if needed, arguments can still be passed to Snakemake using the --options argument, allowing for additional customization and flexibility.  
 
 To maintain consistency and organization, it is essential to adhere to the following file naming conventions when working with NanoPlasm:
 
@@ -56,7 +52,7 @@ Adhering to these file naming conventions ensures clarity and facilitates the or
 
 ### Creation of the analysis folder
 
-The initial step entails creating a designated folder where the analysis will take place. Within this folder, an automatically generated configuration file will be created, encompassing all the parameters required for the analysis. It is imperative to edit this file in accordance with your specific analysis requirements and preferences.
+The initial step consists in creating the analysis folder. Within it, an automatically generated configuration file will be created, encompassing all the parameters required for the analysis. It is imperative to edit this file in accordance with your specific analysis requirements and preferences.
 
     usage: nanoplasm init [-h] -i dir [-I dir] -o dir
 
@@ -70,9 +66,9 @@ The initial step entails creating a designated folder where the analysis will ta
 
 ### Starting NanoPlasm run
 
-After successfully creating the analysis folder, you can initiate a NanoPlasm run. The workflow offers two distinct assembly modes: "long" and "hybrid."
+After creating the analysis folder, you can initiate a NanoPlasm run. The workflow offers two distinct assembly modes: "long" and "hybrid."
 
-- "long" mode: This mode is specifically designed for long-read sequencing data, such as Nanopore or PacBio reads. It focuses on leveraging the unique characteristics of long reads to perform the plasmid assembly, typing, and analysis.
+- "long" mode: This mode is specifically designed for Nanopore long-read sequencing data. It focuses on leveraging the unique characteristics of long reads to perform the plasmid assembly, typing, and analysis.
 
 - "hybrid" mode: In this mode, a combination of long and short reads is utilized. The workflow harnesses the strengths of both long and short reads to achieve more comprehensive and accurate results in plasmid assembly, typing, and analysis.
 
