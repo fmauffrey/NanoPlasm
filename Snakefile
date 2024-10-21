@@ -1,3 +1,5 @@
+import os
+
 # Config file with run parameters
 configfile: "config.yaml"
 
@@ -8,14 +10,16 @@ configfile: "config.yaml"
 rule run:
     message: "Starting Nanoplasm"
     input: "Typing_results.tsv",
-            "08-mge-cluster/mge-cluster_results.csv",
-            expand("09-karga/{sample}_nanofilt_KARGA_mappedReads.csv", sample=config["samples"])
+           "08-mge-cluster/mge-cluster_results.csv",
+            expand("09-karga/{sample}_nanofilt_KARGA_mappedReads.csv", sample=config["samples"]),
+            expand("09-karga/{sample}_contigs_amr_profile.tsv", sample=config["samples"]),
+            ".annotations.txt"
 
 # Trigger the quality check rules
 rule quality_check:
     message: "Quality check"
     input: expand("QC/{sample}_nanoq_report.txt", sample=config["samples"]),
-           expand("QC/{sample}_R1_fastqc.zip", sample=config["samples"]) if config["mode"] == "hybrid" else ""
+           "QCsummary.txt"
 
 
 ############### Rules common to long and hybrid mode ###############
@@ -43,7 +47,7 @@ rule medaka:
         assembly = "03-assembly/{sample}_long/assembly.fasta" if config["mode"] == "long"  else "03-assembly/{sample}_hybrid/assembly.fasta"
     output: "04-Medaka/{sample}/consensus.fasta"
     log: "04-Medaka/{sample}/{sample}_medaka_log.txt"
-    container: "docker://ontresearch/medaka"
+    container: "docker://nanozoo/medaka"
     threads: 2
     params:
         model = config["medaka"]["model"]
@@ -62,11 +66,26 @@ rule nanoq:
     shell:
         "nanoq -i {input} -s -vvv 2> {output}"
 
+# LONG MODE -- QC summary
+rule qc_summary:
+    message: "Qc summary"
+    input: 
+        nanoq = expand("QC/{sample}_nanoq_report.txt", sample=config["samples"]),
+        flye = expand("03-assembly/{sample}_long/assembly_info.txt", sample=config["samples"])
+    output: "QCsummary.txt"
+    params:
+        plasmid_min_size = config["classify_contigs"]["min_size"],
+        plasmid_max_size = config["classify_contigs"]["max_size"]
+    script:
+        "bin/QCsummary.py"
+
 # LONG MODE -- Assembly with Flye
 rule flye:
     message: "Flye: {wildcards.sample}"
     input: "01-NanoFilt/{sample}_nanofilt.fastq"
-    output: "03-assembly/{sample}_long/assembly.fasta"
+    output: 
+        assembly = "03-assembly/{sample}_long/assembly.fasta",
+        info = "03-assembly/{sample}_long/assembly_info.txt"
     log: "03-assembly/{sample}_long/{sample}_flye_log.txt"
     container: "docker://staphb/flye"
     threads: 12
@@ -87,7 +106,7 @@ rule homopolish:
         model = config["homopolish"]["model"],
         db = config["homopolish"]["db"]
     shell:
-        "homopolish polish -a {input} -s {workflow.basedir}/{params.db} -m R10.3.pkl -o 05-Homopolish/{wildcards.sample} > {log} 2>&1"
+        "homopolish polish -a {input} -s {workflow.basedir}/{params.db} -m {params.model} -o 05-Homopolish/{wildcards.sample} > {log} 2>&1"
 
 
 ############### Rules for hybrid mode ###############
@@ -198,17 +217,37 @@ rule resfinder:
 
 # KARGA - Antimicrobial resistance genes
 rule karga:
-    message: "KmerResistance: {wildcards.sample}"
+    message: "KARGA: {wildcards.sample}"
     input: "01-NanoFilt/{sample}_nanofilt.fastq"
     output: "09-karga/{sample}_nanofilt_KARGA_mappedReads.csv"
     threads: 24
     params:
         db = config["karga"]["db"]
     shell:
-        """java -cp {workflow.basedir}/KARGA KARGA {input} d:{workflow.basedir}/{params.db} -Xmx16GB;
+        """java -cp {workflow.basedir}/KARGA/openjdk-8/KARGA KARGA {input} d:{workflow.basedir}/{params.db} -Xmx16GB > /dev/null 2>&1;
         mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedReads.csv 09-karga;
         mv 01-NanoFilt/{wildcards.sample}_nanofilt_KARGA_mappedGenes.csv 09-karga"""
 
+# KARGA - Align fastq on assembly with minimap2 to get reads-plasmids relationship
+rule minimap2:
+    message: "Minimap2: {wildcards.sample}"
+    input: 
+        fastq = "01-NanoFilt/{sample}_nanofilt.fastq",
+        assembly = "05-Homopolish/{sample}/consensus_homopolished.fasta" if config["mode"] == "long" else "05-polypolish/{sample}/assembly.fasta"
+    output: "09-karga/{sample}_contigs_on_assembly.paf"
+    threads: 24
+    container: "docker://nanozoo/minimap2"
+    shell:
+        "minimap2 {input.assembly} {input.fastq} -o {output} -t {threads} > /dev/null 2>&1"
+
+rule reads_to_contigs:
+    message: "Link reads and contigs: {wildcards.sample}"
+    input: 
+        alignment = "09-karga/{sample}_contigs_on_assembly.paf",
+        karga = "09-karga/{sample}_nanofilt_KARGA_mappedReads.csv"
+    output: "09-karga/{sample}_contigs_amr_profile.tsv"
+    script:
+        "bin/reads_to_contigs.py"
 
 # Mob-suite - plasmid typing
 rule mobsuite:
@@ -243,7 +282,7 @@ rule mgecluster:
         kmer = config["mge-cluster"]["kmer"]
     threads: 24
     shell:
-        "mge_cluster --create --input {input} --outdir 08-mge-cluster --perplexity {params.perplexity} --min_cluster {params.min_cluster} --kmer {params.kmer} --threads {threads}"
+        "mge_cluster --create --input {input} --outdir 08-mge-cluster --perplexity {params.perplexity} --min_cluster {params.min_cluster} --kmer {params.kmer} --threads {threads} > /dev/null 2>&1"
 
 # Gathering results from Mobsuite and Resfinder
 rule gather_results:
@@ -255,3 +294,20 @@ rule gather_results:
     script:
         "bin/gather_typing_results.py"
 
+# PROKKA - annotation of plasmids
+rule prokka:
+    message: "Prokka"
+    input: "Sequences/contigs_classification.tsv"
+    output: ".annotations.txt"
+    container: "docker://staphb/prokka"
+    params:
+        options = config["prokka"]["options"]
+    threads: 48
+    shell:
+        """
+        mkdir -p 10-prokka;
+        for i in $(ls Sequences/plasmids); 
+            do prokka --force --outdir 10-prokka/$i -cpus {threads} {params.options} Sequences/plasmids/$i > /dev/null 2>&1;
+        done;
+        touch {output}
+        """
