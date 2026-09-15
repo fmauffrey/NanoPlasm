@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/653649832.svg)](https://doi.org/10.5281/zenodo.22769805)
+
 # NanoPlasm
 v1.0  
 
